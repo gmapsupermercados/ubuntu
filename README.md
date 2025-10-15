@@ -1,6 +1,4 @@
-# DOCUMENTAÇÃO DE PROCEDIMENTO: Integração de Clientes Ubuntu no Active Directory (AD)
-
-## 🎯 Sumário Executivo: Objetivo da Solução
+# Integração de Clientes Ubuntu no Active Directory (AD) 
 
 Este documento detalha o script Bash (`setup.sh`), uma ferramenta desenvolvida para automatizar e padronizar o ingresso de **Estações de Trabalho Ubuntu** no ambiente de domínio Active Directory (AD).
 
