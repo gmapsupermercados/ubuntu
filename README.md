@@ -1,4 +1,4 @@
-# README: Integração Robusta de Estações de Trabalho Ubuntu no Active Directory (AD)
+# README: Integração de Estações de Trabalho Ubuntu no Active Directory (AD)
 
 ## 🎯 Objetivo
 
