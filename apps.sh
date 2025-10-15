@@ -1,14 +1,6 @@
 #!/bin/bash
 
 # ===============================================
-# VARIÁVEIS DE SEGURANÇA E USUÁRIO (AJUSTE AQUI)
-# ===============================================
-USER_SUPORTE="gmap"
-# Senha temporária: 159753
-# Gerando hash seguro (SHA-512) para a senha inicial.
-SENHA_INICIAL_HASHED=$(echo "159753" | openssl passwd -6 -stdin) 
-
-# ===============================================
 # 1. ATUALIZAÇÃO E PRÉ-REQUISITOS
 # ===============================================
 
@@ -37,8 +29,8 @@ echo "--- 2.2. Instalando Remmina (Cliente VNC/RDP/SSH) ---"
 sudo apt install -y remmina remmina-plugin-rdp remmina-plugin-vnc
 
 # --- 2.3. VNC Server (Servidor de Compartilhamento de Tela Nativo) ---
-echo "--- 2.3. Habilitando Servidor VNC Nativo (Acesso de Tela) ---"
-# O 'vino' é o servidor VNC que o GNOME/Ubuntu geralmente usa para compartilhamento.
+echo "--- 2.3. Habilitando Servidor VNC Nativo ---"
+# O 'vino' é o servidor VNC que o GNOME/Ubuntu usa para compartilhamento.
 sudo apt install -y vino
 
 # --- 2.4. OpenSSH Server (Acesso via Terminal) ---
@@ -46,32 +38,10 @@ echo "--- 2.4. Instalando e Configurando OpenSSH Server ---"
 sudo apt install -y openssh-server
 
 # ===============================================
-# 3. CRIAÇÃO E CONFIGURAÇÃO DE USUÁRIO DE SUPORTE
+# 3. FINALIZAÇÃO E REINÍCIO DE SERVIÇOS
 # ===============================================
 
-echo "--- 3.1. Criando usuário de suporte '$USER_SUPORTE' ---"
-# Cria o usuário se ele não existir
-if ! id "$USER_SUPORTE" &>/dev/null; then
-    sudo useradd -m -s /bin/bash "$USER_SUPORTE"
-fi
-# Define a senha inicial segura (usando o hash)
-sudo usermod --password "$SENHA_INICIAL_HASHED" "$USER_SUPORTE"
-# Concede acesso sudo
-sudo usermod -aG sudo "$USER_SUPORTE" 
-
-echo ""
-echo "################################################################"
-echo "### AVISO CRÍTICO DE SEGURANÇA: Senha de '$USER_SUPORTE'     ###"
-echo "### O usuário '$USER_SUPORTE' foi criado com a senha '159753'. ###"
-echo "### POR FAVOR, altere esta senha imediatamente!               ###"
-echo "################################################################"
-echo ""
-
-# ===============================================
-# 4. FINALIZAÇÃO E REINÍCIO DE SERVIÇOS
-# ===============================================
-
-echo "--- 4. Finalizando: Reiniciando serviços de rede e SSH ---"
+echo "--- 3. Finalizando: Reiniciando serviços de rede e SSH ---"
 sudo systemctl restart ssh
 sudo systemctl daemon-reload
-echo "Instalação de aplicativos e configuração de usuário concluída."
+echo "Instalação de aplicativos concluída. A máquina está pronta para suporte."

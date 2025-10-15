@@ -1,4 +1,6 @@
-# Integração de Clientes Ubuntu no Active Directory (AD) 
+# DOCUMENTAÇÃO DE PROCEDIMENTO: Integração de Clientes Ubuntu no Active Directory (AD)
+
+## 🎯 Sumário Executivo: Objetivo da Solução
 
 Este documento detalha o script Bash (`setup.sh`), uma ferramenta desenvolvida para automatizar e padronizar o ingresso de **Estações de Trabalho Ubuntu** no ambiente de domínio Active Directory (AD).
 
@@ -38,7 +40,7 @@ A seção de variáveis (`VARIÁVEIS DE AMBIENTE`) do script `setup.sh` deve ser
     sudo ./setup.sh
     ```
 4.  O sistema solicitará a **senha da conta administrativa do AD** (`$USER_ADMIN_AD`) para autenticar o processo de ingresso no domínio.
-5.  **Finalização:** Após a conclusão bem-sucedida, o script exige um **reboot** do sistema para carregar integralmente os novos módulos de autenticação (SSSD) e políticas (adsys).
+5.  **Finalização:** Ao concluir, um **`sudo reboot`** é obrigatório para que os novos serviços (SSSD, Samba, Adsys) sejam carregados corretamente.
 
 ## 🧠 Detalhamento Técnico da Execução (Fluxo de Trabalho do Script)
 
@@ -80,16 +82,7 @@ Após o **reboot**, valide a integração:
 
 ## 4. PROCEDIMENTO SUPLEMENTAR: Instalação de Ferramentas de Suporte (`apps.sh`)
 
-Este script é opcional e deve ser executado **após o reboot** da máquina e a confirmação do Domain Join, para instalar as ferramentas de suporte remoto e configurar o acesso de TI.
-
-### ⚙️ Variáveis de Segurança (Ajuste Obrigatório)
-
-O script utiliza variáveis internas de segurança que devem ser revistas:
-
-| Variável | Valor Padrão (Interno) | Função no Processo |
-| :--- | :--- | :--- |
-| `USER_SUPORTE` | `gmap` | Nome do usuário de suporte técnico local a ser criado. |
-| `SENHA_INICIAL` | `159753` (Senha padrão) | Senha inicial temporária, armazenada como hash para segurança no script. |
+Este script é opcional e deve ser executado **após o reboot** da máquina e a confirmação do Domain Join, para instalar as ferramentas essenciais de suporte remoto.
 
 ### 🚀 Guia de Execução Suplementar
 
@@ -106,9 +99,8 @@ O script realiza as seguintes ações:
 | **Acesso Remoto** | AnyDesk | Instalação via repositório oficial para suporte em tempo real (on-demand). |
 | **Cliente Universal** | Remmina | Instalação do cliente com suporte a plugins RDP e VNC (essencial para conexões múltiplas). |
 | **Servidor de Tela** | Vino (Servidor VNC) | Habilita o servidor VNC nativo do GNOME, permitindo o compartilhamento de tela para suporte. |
-| **Acesso via Terminal** | OpenSSH Server | Instala o servidor SSH para acesso seguro via terminal pelo usuário `gmap`. |
-| **Criação de Usuário** | Usuário `gmap` | Cria o usuário local `gmap`, concede acesso `sudo` e define a senha inicial (`159753`). |
+| **Acesso via Terminal** | OpenSSH Server | Instala o servidor SSH, permitindo o acesso seguro via terminal pelo time de TI (utilizando contas de Domínio ou contas locais criadas previamente). |
 
-### 🚨 Aviso Crítico de Segurança
+### 💡 Observação de Acesso SSH
 
-O usuário `gmap` é criado com uma senha padrão e pré-definida. É **mandatório** que esta senha seja alterada imediatamente após o primeiro uso, a fim de mitigar riscos de segurança.
+Para realizar o login via SSH, o técnico deve utilizar uma conta de usuário já existente no sistema (seja uma conta de Domínio AD ou uma conta local de suporte criada conforme o padrão da TI).
