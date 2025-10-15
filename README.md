@@ -1,2 +1,2 @@
 # ubuntu
-Repositório de auxílio a migração do windows para linux
+Repositório de auxílio a migração do windows para linux da GMAPSUPERMERCADOS.
