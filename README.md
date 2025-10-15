@@ -2,11 +2,11 @@
 
 ## 🎯 Objetivo
 
-Este script Bash (`integrar_ad.sh`) automatiza o processo de ingresso de **Estações de Trabalho Cliente Ubuntu** em um domínio Active Directory (AD) da Microsoft. Ele é projetado para garantir o **Single Sign-On (SSO)** para login no desktop e acesso a compartilhamentos de rede SMB/Windows, prevenindo falhas comuns de Kerberos causadas por dessincronia de DNS e NTP.
+Este script Bash (`setup.sh`) automatiza o processo de ingresso de **Estações de Trabalho Cliente Ubuntu** em um domínio Active Directory (AD) da Microsoft. Ele é projetado para garantir o **Single Sign-On (SSO)** para login no desktop e acesso a compartilhamentos de rede SMB/Windows, prevenindo falhas comuns de Kerberos causadas por dessincronia de DNS e NTP.
 
 ## ⚠️ Pré-requisitos e Avisos
 
-1.  **Instalação Limpa:** Este script deve ser executado em uma instalação **limpa** do Ubuntu Desktop (ou Server).
+1.  **Instalação Limpa:** Este script deve ser executado em uma instalação **limpa** do Ubuntu Desktop.
 2.  **Permissão de `sudo`:** O usuário que executar o script deve ter permissões de `sudo` (ser membro do grupo `sudo`).
 3.  **Objeto do Computador:** Se o hostname da máquina já existiu no AD e apresentou problemas, garanta que o objeto do computador esteja **removido** do AD para evitar conflitos de SPN (Kerberos).
 
@@ -24,14 +24,14 @@ Edite a seção **`VARIÁVEIS DE AMBIENTE`** do script antes de usá-lo:
 
 ## 🚀 Como Executar o Script
 
-1.  Salve o código como `integrar_ad.sh`.
+1.  Baixe ou salve o código como `setup.sh`.
 2.  Torne o script executável:
     ```bash
-    chmod +x integrar_ad.sh
+    chmod +x setup.sh
     ```
 3.  Execute o script:
     ```bash
-    sudo ./integrar_ad.sh
+    sudo ./setup.sh
     ```
 4.  O script pedirá a **senha do seu usuário de administração do AD** (`rds_suporte.ti`) durante o processo de *join*.
 5.  **IMPORTANTE:** Ao final da execução, o script solicitará que você **reinicie o sistema**.
