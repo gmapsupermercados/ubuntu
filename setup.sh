@@ -14,7 +14,7 @@ IP_ATUAL=$(hostname -I | awk '{print $1}')
 HOSTNAME_ATUAL=$(hostname)
 
 # ===============================================
-# 1. PRÉ-REQUISITOS E PREPARAÇÃO (Anti-Kerberos-Fail)
+# 1. PRÉ-REQUISITOS E PREPARAÇÃO (Anti-Kerberos-Fail e Ambiente)
 # ===============================================
 
 echo "--- 1. Atualizando e instalando dependências (samba, sssd, realmd, adsys) ---"
@@ -46,6 +46,15 @@ echo "--- Configurando o /etc/hosts (Mapeamento local e FQDN) ---"
 echo "127.0.0.1       localhost
 $IP_ATUAL $HOSTNAME_ATUAL.$DOMINIO_DNS $HOSTNAME_ATUAL" | sudo tee /etc/hosts
 
+# --- DESATIVAÇÃO DO WAYLAND (Prioriza o Xorg/X11) ---
+echo "--- Desativando o Wayland no GDM para garantir uso do Xorg ---"
+# O GNOME Display Manager (GDM) será forçado a usar o Xorg por padrão após o reboot.
+# Isso não afeta a sessão atual.
+sudo sed -i 's/#WaylandEnable=false/WaylandEnable=false/' /etc/gdm3/custom.conf || \
+sudo sed -i 's/WaylandEnable=true/#WaylandEnable=false/' /etc/gdm3/custom.conf
+# Reinicia o GDM (opcional, mas mais seguro para garantir a leitura da config no próximo boot)
+sudo systemctl restart gdm3.service
+
 
 # ===============================================
 # 2. CONFIGURAÇÃO DE SERVIÇOS (SMBD e SSSD)
@@ -72,7 +81,7 @@ echo "[global]
     client use spnego = yes
 " | sudo tee /etc/samba/smb.conf
 
-# --- CONFIGURAÇÃO MANUAL DO SSSD (Para garantir Kerberos e Login FQDN) ---
+# --- CONFIGURAÇÃO MANUAL DO SSSD (Para garantir Kerberos e Login UPN) ---
 echo "--- Configurando SSSD para FORÇAR LOGIN COMPLETO (usuario@dominio) ---"
 sudo rm -f /etc/sssd/sssd.conf
 echo "[sssd]
@@ -88,9 +97,7 @@ access_provider = ad
 chpass_provider = ad
 krb5_realm = $DOMINIO_KERBEROS
 ldap_id_mapping = true
-# CHAVE MUDADA PARA TRUE: Força o uso do FQDN (usuario@dominio)
 use_fully_qualified_names = true 
-# FALLBACK MUDADO: Usa o formato do UPN (usuario@dominio) no home dir
 fallback_homedir = /home/%u@%d
 default_shell = /bin/bash" | sudo tee /etc/sssd/sssd.conf
 
@@ -103,7 +110,6 @@ sudo chmod 600 /etc/sssd/sssd.conf
 
 echo "--- TENTANDO JOIN NO DOMÍNIO COM REALM JOIN (Cria SPN, Configura SSSD e Adsys) ---"
 sudo realm join $DOMINIO_DNS -U $USER_ADMIN_AD --client-software=sssd --automatic-setup
-# Deixamos o 'realm permit --all' para que o SSSD saiba que todos os usuários podem autenticar.
 sudo realm permit --all
 
 # --- ATIVAÇÃO DO ADSYS (INTEGRAÇÃO GPO) ---
@@ -113,8 +119,6 @@ sudo adsysctl update --machine --wait
 
 # --- HABILITAR CRIAÇÃO AUTOMÁTICA DE HOME DIRECTORY (Ajuste PAM) ---
 echo "--- Habilitando criação automática de home directory (PAM) ---"
-# Adiciona o módulo mkhomedir para criar a pasta /home/usuario@dominio
-# O mkhomedir usará a variável %u@%d definida no SSSD.conf
 sudo sed -i '/^session\s*required\s*pam_unix.so/a session optional pam_mkhomedir.so skel=/etc/skel/ umask=0022' /etc/pam.d/common-session
 
 # --- VERIFICAÇÃO E REINÍCIO FINAL ---
