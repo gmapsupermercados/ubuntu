@@ -74,10 +74,10 @@ Após o **reboot**, valide a integração:
 
 1.  **Teste de Login UPN/SSO:**
     * Faça **Logout**.
-    * Na tela de login, selecione "Não listado?" e use o login **COMPLETO** (UPN), por exemplo: `matheusps.it@gmap.cd`.
+    * Na tela de login, selecione "Não listado?" e use o login **COMPLETO** (UPN), por exemplo: `mataburro.pacheco@gmap.cd`.
 2.  **Teste de Acesso a Compartilhamentos SMB (SSO):**
     * Abra o Gerenciador de Arquivos (Nautilus).
-    * Pressione `Ctrl+L` e acesse um servidor (Ex: `smb://10.172.2.4` ou `smb://SRVFILE01`).
+    * Pressione `Ctrl+L` e acesse um servidor (Ex: `smb://192.168.23.4` ou `smb://DSKALCUBQ01`).
     * O acesso deve ocorrer **instantaneamente e sem solicitação de senha**.
 3.  **Teste de Aplicação de GPO (`adsys`):**
     * Verifique se as políticas definidas no AD foram aplicadas.
