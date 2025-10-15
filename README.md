@@ -1,86 +1,87 @@
-# Integração de Estações de Trabalho Ubuntu no Active Directory (AD)
+# README: Integração de Estações de Trabalho Ubuntu no Active Directory (AD)
 
-## 🎯 Objetivo
+## 🎯 Objetivo: Solução de Integração de Clientes Ubuntu
 
-Este script Bash (`setup.sh`) automatiza a integração completa de **Estações de Trabalho Cliente Ubuntu** em um domínio Active Directory (AD).
+Este script Bash (`setup.sh`) foi desenvolvido para automatizar e robustecer a integração de **Estações de Trabalho Cliente Ubuntu** em ambientes de domínio Active Directory (AD).
 
-O processo é projetado para garantir:
-1.  **Single Sign-On (SSO):** Login de domínio no desktop e acesso a compartilhamentos de rede SMB/Windows.
-2.  **Gerenciamento de Políticas (GPO):** Aplicação das Políticas de Grupo (GPOs) do AD na máquina Ubuntu (via `adsys`).
-3.  **Máxima Estabilidade:** Prevenção de falhas de Kerberos através de configurações rígidas de DNS e NTP.
+O processo garante **três pilares** de integração essenciais para ambientes corporativos:
 
-## ⚠️ Pré-requisitos e Avisos
+1.  **Single Sign-On (SSO) Preciso:** Autenticação de domínio no desktop via **UPN** (ex: `usuario@dominio.com`) e acesso transparente a compartilhamentos de rede SMB/Windows.
+2.  **Gerenciamento de Políticas (GPO):** Total aplicação das Políticas de Grupo (GPOs) do AD na máquina Ubuntu, utilizando o serviço **`adsys`** da Canonical.
+3.  **Estabilidade Crítica:** Blindagem contra falhas recorrentes de Kerberos (DNS e NTP) por meio de configurações do sistema operacional.
 
-1.  **Instalação Limpa:** Este script deve ser executado em uma instalação **limpa** do Ubuntu Desktop.
-2.  **Permissão de `sudo`:** O usuário que executar o script deve ter permissões de `sudo`.
-3.  **Objeto do Computador:** Se o hostname da máquina já existiu no AD e causou problemas, **garanta que o objeto do computador esteja removido do AD** para evitar conflitos de Service Principal Name (SPN/Kerberos).
+## ⚠️ Pré-requisitos e Avisos de Implementação
 
-## ⚙️ Variáveis de Ambiente (Ajuste Antes de Executar)
+1.  **Sistema Base:** O script é otimizado para ser executado em uma instalação **limpa e atualizada** do Ubuntu Desktop (versão 20.04 LTS ou superior é recomendada).
+2.  **Privilégios:** A execução deve ser feita por um usuário com permissões de `sudo`.
+3.  **Higiene do AD:** Se a máquina cliente já ingressou no domínio e falhou anteriormente, **confirme que o objeto do computador foi removido do AD** para evitar a reutilização de Service Principal Name (SPN/Kerberos).
 
-Edite a seção **`VARIÁVEIS DE AMBIENTE`** do script antes de usá-lo:
+## ⚙️ Variáveis de Ambiente (Ajuste Obrigatório)
 
-| Variável | Valor Exemplo | Descrição |
+Edite esta seção no script `setup.sh` com as informações do seu domínio:
+
+| Variável | Valor Exemplo | Descrição Técnica |
 | :--- | :--- | :--- |
 | `DOMINIO_KERBEROS` | `GMAP.CD` | O **Realm Kerberos** (Nome do Domínio em **MAIÚSCULAS**). |
 | `DOMINIO_DNS` | `gmap.cd` | O **Sufixo DNS** do domínio (Nome do Domínio em **minúsculas**). |
-| `DNS1` | `10.172.2.2` | **IP do Controlador de Domínio (DC) Primário.** Usado para DNS e NTP. |
+| `DNS1` | `10.172.2.2` | **IP do Controlador de Domínio (DC) Primário.** Fonte de DNS e Sincronização de Tempo (NTP). |
 | `DNS2` | `192.168.23.254` | **IP do DC Secundário.** |
-| `USER_ADMIN_AD` | `rds_suporte.ti` | Usuário do AD com permissão para ingressar máquinas no domínio. |
+| `USER_ADMIN_AD` | `rds_suporte.ti` | Usuário do AD com privilégio de **Domain Join** (ingresso de máquinas no domínio). |
 
-## 🚀 Como Executar o Script
+## 🚀 Guia de Execução
 
-1.  Baixe ou salve o código como `setup.sh`.
-2.  Torne o script executável:
+1.  Salve o código com o nome `setup.sh`.
+2.  Conceda permissão de execução:
     ```bash
     chmod +x setup.sh
     ```
-3.  Execute o script:
+3.  Execute o script com privilégios de root:
     ```bash
     sudo ./setup.sh
     ```
-4.  O script pedirá a **senha do usuário administrador do AD** (`rds_suporte.ti`) durante o processo de *join*.
-5.  **IMPORTANTE:** Ao final da execução, o script solicitará que você **reinicie o sistema**.
+4.  O script solicitará a **senha do usuário administrador do AD** (`$USER_ADMIN_AD`) durante a fase de ingresso no domínio.
+5.  **Ação Final:** Ao concluir, um **`sudo reboot`** é obrigatório para que os novos serviços (SSSD, Samba, Adsys) sejam carregados corretamente.
 
-## 🧠 Explicação Técnica do Script (Robô de Kerberos e GPO)
+## 🧠 Explicação Técnica Detalhada (Assegurando Confiança)
 
-O script utiliza uma sequência de comandos otimizada para garantir a estabilidade do Kerberos e a aplicação das Políticas de Grupo.
+O script utiliza uma arquitetura de integração modular com foco na prevenção de erros:
 
-### Seção 1: PRÉ-REQUISITOS E PREPARAÇÃO
+### Seção 1: PRÉ-REQUISITOS E BLINDAGEM DE SISTEMA
 
-| Comando Principal | Propósito | Por Que É Crucial |
+| Ação Principal | Detalhe Técnico | Objetivo de Segurança/Estabilidade |
 | :--- | :--- | :--- |
-| `systemctl disable systemd-resolved` & `chattr +i /etc/resolv.conf` | **Fixação de DNS.** | Elimina a principal causa de falha de Kerberos ao forçar o uso exclusivo dos DCs como resolvedores. |
-| **`ntpdate $DNS1` & `timedatectl set-ntp true`** | **Estabilidade de Tempo.** | Garante a sincronização imediata (ntpdate) e a estabilidade contínua do serviço de tempo (`timedatectl`), essencial para que o AD não rejeite os tickets Kerberos. |
+| **Fixação de DNS** | Desabilita `systemd-resolved` e usa `chattr +i /etc/resolv.conf`. | Garante que **somente** os Controladores de Domínio sejam usados para resolução, eliminando ambiguidades de Kerberos. |
+| **Sincronização NTP Robusta** | Usa `ntpdate` (sincronia imediata) seguido de `timedatectl` (serviço persistente). | É a dupla camada de proteção para garantir que o relógio da máquina não tenha desvio superior a 5 minutos, o que é um bloqueio fatal no AD. |
 
-### Seção 2: CONFIGURAÇÃO DE SERVIÇOS (SAMBA e SSSD)
+### Seção 2: CONFIGURAÇÃO DE SERVIÇOS E PROTOCOLOS
 
-| Comando Principal | Propósito | Benefício |
+| Serviço | Configuração Chave | Resultado |
 | :--- | :--- | :--- |
-| **Configuração `smb.conf`** | Define `security = ads` e `kerberos method = secrets and keytab`. | Garante que o protocolo SMB use o cache de chaves Kerberos da máquina para acesso SSO a compartilhamentos Windows. |
-| **Configuração `sssd.conf`** | Define explicitamente o provedor de autenticação (`id_provider = ad`) e o servidor AD. | Garante que o login de usuário do AD funcione corretamente e com mapeamento de IDs de usuário (POSIX) estável. |
+| **Samba (`smb.conf`)** | `security = ads`, `kerberos method = secrets and keytab` | Habilita o protocolo SMB a usar o tíquete Kerberos da máquina para acesso SSO. |
+| **SSSD (`sssd.conf`)** | `use_fully_qualified_names = true`, `fallback_homedir = /home/%u@%d` | **Força o login por UPN** (`usuario@dominio`) e garante que os diretórios home sejam criados no formato específico de UPN. |
 
-### Seção 3: JOIN NO DOMÍNIO E FINALIZAÇÃO
+### Seção 3: JOIN, GPO e Verificação
 
-| Comando Principal | Propósito | Benefício de TI |
+| Comando | Propósito | Benefício de TI |
 | :--- | :--- | :--- |
-| **`realm join ...`** | Realiza o ingresso da máquina no domínio. | Cria a identidade do computador no AD (SPN/Kerberos) e integra o SSSD/PAM (login). |
-| **`sudo systemctl enable --now adsys.service`** | Habilita e inicia o serviço **`adsys`**. | **Integração GPO:** Permite que a estação de trabalho Ubuntu receba e aplique as Políticas de Grupo do AD. |
-| `pam_mkhomedir.so` | Habilita a criação automática do diretório `/home/usuario` no primeiro login do AD. | Melhora a Experiência do Usuário (UX). |
-| **`sudo net ads testjoin`** | **Verificação Final de Confiança.** | Confirma que a confiança do Kerberos/ADS para o protocolo SMB está perfeitamente estabelecida. |
+| **`realm join ...`** | Ingresso no domínio. | Cria o objeto de computador no AD (SPN) e configura automaticamente o SSSD/PAM para autenticação. |
+| **`sudo systemctl enable --now adsys.service`** | Ativação do **`adsys`**. | **Integração GPO:** Permite que o cliente Ubuntu aplique políticas de usuário e máquina definidas no Console de Gerenciamento de Política de Grupo do AD. |
+| **`sudo net ads testjoin`** | **Verificação Final de Confiança.** | Confirma a integridade da relação de confiança ADS/Kerberos para o Samba, essencial para o acesso a arquivos. |
 
-## 🧪 Pós-Execução e Testes
+## 🧪 Pós-Execução e Validação (Testes)
 
 Após o **reboot**, valide a integração:
 
-1.  **Teste de Login SSO:**
+1.  **Teste de Login UPN/SSO:**
     * Faça **Logout**.
-    * Na tela de login, selecione "Não listado?" e use apenas o **nome de usuário do AD** (Ex: `matheusps.it`). Se logar, o SSSD está OK.
+    * Na tela de login, selecione "Não listado?" e use o login **COMPLETO** (UPN), por exemplo: `matheusps.it@gmap.cd`.
 2.  **Teste de Acesso a Compartilhamentos SMB (SSO):**
     * Abra o Gerenciador de Arquivos (Nautilus).
-    * Pressione `Ctrl+L` e digite o caminho de um compartilhamento Windows (Ex: `smb://servidor-ad/dados`).
-    * O acesso deve ocorrer **instantaneamente, sem pedir senha**, confirmando que o Kerberos para o Samba está 100% funcional.
-3.  **Teste de Aplicação de GPO (adsys):**
-    * Verifique se as políticas de máquina ou usuário definidas no AD (ex: fundo de tela, proxy) foram aplicadas ao ambiente Ubuntu. Você pode checar o status com:
+    * Pressione `Ctrl+L` e acesse um servidor (Ex: `smb://10.172.2.4` ou `smb://SRVFILE01`).
+    * O acesso deve ocorrer **instantaneamente e sem solicitação de senha**.
+3.  **Teste de Aplicação de GPO (`adsys`):**
+    * Verifique se as políticas definidas no AD foram aplicadas.
+    * Você pode forçar a atualização das políticas para fins de teste:
     ```bash
     sudo adsysctl update --machine --wait
     ```

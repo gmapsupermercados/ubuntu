@@ -18,7 +18,6 @@ HOSTNAME_ATUAL=$(hostname)
 # ===============================================
 
 echo "--- 1. Atualizando e instalando dependências (samba, sssd, realmd, adsys) ---"
-# Adicionando adsys à lista de instalação
 sudo apt update
 sudo apt install -y samba smbclient sssd krb5-user ntpdate adcli realmd adsys
 
@@ -37,9 +36,7 @@ sudo chattr +i /etc/resolv.conf
 
 # --- CONFIGURAÇÃO DE TEMPO (NTP - ESSENCIAL PARA KERBEROS) ---
 echo "--- Sincronizando o relógio com o DC ($DNS1) e garantindo estabilidade ---"
-# Sincronização imediata (ntpdate)
 sudo ntpdate $DNS1
-# Configura o serviço de tempo do sistema para usar o DC (Método Moderno)
 sudo timedatectl set-ntp true
 sudo timedatectl set-timezone America/Sao_Paulo # Ajuste o timezone se necessário
 sudo systemctl restart systemd-timesyncd.service
@@ -75,8 +72,8 @@ echo "[global]
     client use spnego = yes
 " | sudo tee /etc/samba/smb.conf
 
-# --- CONFIGURAÇÃO MANUAL DO SSSD (Para garantir a ordem de providers) ---
-echo "--- Configurando SSSD (para garantir Kerberos e Mapeamento de ID) ---"
+# --- CONFIGURAÇÃO MANUAL DO SSSD (Para garantir Kerberos e Login FQDN) ---
+echo "--- Configurando SSSD para FORÇAR LOGIN COMPLETO (usuario@dominio) ---"
 sudo rm -f /etc/sssd/sssd.conf
 echo "[sssd]
 services = nss, pam, ad
@@ -91,8 +88,10 @@ access_provider = ad
 chpass_provider = ad
 krb5_realm = $DOMINIO_KERBEROS
 ldap_id_mapping = true
-use_fully_qualified_names = false 
-fallback_homedir = /home/%u
+# CHAVE MUDADA PARA TRUE: Força o uso do FQDN (usuario@dominio)
+use_fully_qualified_names = true 
+# FALLBACK MUDADO: Usa o formato do UPN (usuario@dominio) no home dir
+fallback_homedir = /home/%u@%d
 default_shell = /bin/bash" | sudo tee /etc/sssd/sssd.conf
 
 sudo chmod 600 /etc/sssd/sssd.conf
@@ -103,20 +102,19 @@ sudo chmod 600 /etc/sssd/sssd.conf
 # ===============================================
 
 echo "--- TENTANDO JOIN NO DOMÍNIO COM REALM JOIN (Cria SPN, Configura SSSD e Adsys) ---"
-# O REALM JOIN é o ponto de contato oficial com o AD.
 sudo realm join $DOMINIO_DNS -U $USER_ADMIN_AD --client-software=sssd --automatic-setup
+# Deixamos o 'realm permit --all' para que o SSSD saiba que todos os usuários podem autenticar.
 sudo realm permit --all
 
 # --- ATIVAÇÃO DO ADSYS (INTEGRAÇÃO GPO) ---
 echo "--- Habilitando e aplicando o adsys (GPO Integration) ---"
-# Habilita o serviço de política de grupo do Ubuntu.
 sudo systemctl enable --now adsys.service
-# Aplica as políticas de máquina imediatamente.
 sudo adsysctl update --machine --wait
 
 # --- HABILITAR CRIAÇÃO AUTOMÁTICA DE HOME DIRECTORY (Ajuste PAM) ---
 echo "--- Habilitando criação automática de home directory (PAM) ---"
-# Adiciona o módulo mkhomedir para criar a pasta /home/usuario AD
+# Adiciona o módulo mkhomedir para criar a pasta /home/usuario@dominio
+# O mkhomedir usará a variável %u@%d definida no SSSD.conf
 sudo sed -i '/^session\s*required\s*pam_unix.so/a session optional pam_mkhomedir.so skel=/etc/skel/ umask=0022' /etc/pam.d/common-session
 
 # --- VERIFICAÇÃO E REINÍCIO FINAL ---
@@ -125,8 +123,7 @@ sudo net ads testjoin
 sudo realm list
 
 echo "--- Reiniciando serviços na ordem correta (FIM) ---"
-# A ordem de reinício é importante para Kerberos: SSSD -> Samba
 sudo systemctl restart sssd
 sudo systemctl restart smbd nmbd cups
 
-echo "Configuração inicial concluída!"
+echo "Script concluído! Faça um 'sudo reboot' agora."
