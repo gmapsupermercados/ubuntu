@@ -33,7 +33,7 @@ Edite a seção **`VARIÁVEIS DE AMBIENTE`** do script antes de usá-lo:
     ```bash
     sudo ./setup.sh
     ```
-4.  O script pedirá a **senha do seu usuário de administração do AD** (`rds_suporte.ti`) durante o processo de *join*.
+4.  O script pedirá a **senha do seu usuário de administração do AD** (`rds_suporte.ti`) durante o processo de *join* (ingresso no domínio).
 5.  **IMPORTANTE:** Ao final da execução, o script solicitará que você **reinicie o sistema**.
 
 ## 🧠 Explicação Técnica do Script (Anti-Falha de Kerberos)
