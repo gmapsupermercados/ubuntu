@@ -1,4 +1,3 @@
-
 # 🧩 Guia Técnico Unificado — Implantação e Reparo de Membro de Domínio (AD / Samba / Winbind)
 
 Este documento consolida **todas as etapas de instalação, correção e integração** de uma máquina **Ubuntu Desktop** ao **Active Directory** (`GMAP.CD`), garantindo:
@@ -38,7 +37,9 @@ sudo ntpdate -s 10.172.2.2 192.168.23.254
 ``` | Corrige o *clock skew* com o DC, usando **todos os IPs** para maior confiabilidade. |
 | **4. Ajustar `/etc/hosts`** | ```bash
 sudo nano /etc/hosts
-``` <br> Adicionar a linha:<br>`192.168.22.XXX NOME_DA_MAQUINA.gmap.cd NOME_DA_MAQUINA` | Garante a resolução correta do FQDN local. |
+```<br>Adicionar a linha:<br>```
+192.168.22.XXX NOME_DA_MAQUINA.gmap.cd NOME_DA_MAQUINA
+``` | Garante a resolução correta do FQDN local. |
 | **5. Desabilitar Wayland (para Login GDM/AnyDesk)** | ```bash
 sudo sed -i 's/^#WaylandEnable=false/WaylandEnable=false/' /etc/gdm3/custom.conf
 ``` | Força o uso do Xorg, compatível com autenticação PAM/Kerberos. |
@@ -48,6 +49,8 @@ sudo sed -i 's/^#WaylandEnable=false/WaylandEnable=false/' /etc/gdm3/custom.conf
 ### 🔹 Fase 2 — Configuração do Kerberos e Samba
 
 #### 🧱 Arquivo `/etc/krb5.conf` (Com Alta Disponibilidade)
+
+Substitua **todo o conteúdo** pelo bloco abaixo:
 
 ```ini
 [libdefaults]
@@ -72,6 +75,8 @@ sudo sed -i 's/^#WaylandEnable=false/WaylandEnable=false/' /etc/gdm3/custom.conf
 
 #### 🧱 Arquivo `/etc/samba/smb.conf`
 
+Substitua o conteúdo da seção `[global]` pelo bloco abaixo:
+
 ```ini
 [global]
     workgroup = GMAP
@@ -82,16 +87,20 @@ sudo sed -i 's/^#WaylandEnable=false/WaylandEnable=false/' /etc/gdm3/custom.conf
     winbind use default domain = yes
     winbind offline logon = yes
 
+    # ID MAPPING (CRÍTICO para mapeamento de SID para UID/GID)
     idmap config * : backend = tdb
     idmap config * : range = 3000-7999
     idmap config GMAP : backend = rid
     idmap config GMAP : range = 10000-999999
 
+    # Templates de Usuário
     template shell = /bin/bash
     template homedir = /home/%D/%U
 ```
 
 ##### Exemplo de compartilhamento SMB (Dados_Ti)
+
+Adicione ao final do arquivo:
 
 ```ini
 [Dados_Ti]
@@ -102,7 +111,10 @@ sudo sed -i 's/^#WaylandEnable=false/WaylandEnable=false/' /etc/gdm3/custom.conf
     browseable = yes
     writable = yes
 
+    # Restringe acesso a membros do grupo 'ti'
     valid users = @GMAP\ti
+
+    # Garante herança de permissões
     force group = ti
     create mask = 0660
     directory mask = 0770
@@ -142,7 +154,7 @@ wbinfo -u
 getent passwd rds_suporte.ti
 id rds_suporte.ti
 ``` | Usuários do domínio devem aparecer listados e o mapeamento SID→UID/GID deve funcionar. |
-| **3. Testar Login Gráfico** | Login via GDM ou AnyDesk com usuário AD. | Login deve criar `/home/GMAP/usuario` automaticamente. |
+| **3. Testar Login Gráfico** | Fazer login via GDM ou AnyDesk com usuário AD. | Login deve criar `/home/GMAP/usuario` automaticamente. |
 
 ---
 
